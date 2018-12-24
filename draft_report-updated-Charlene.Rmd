@@ -315,22 +315,92 @@ anova(mod, mod.null, test = "LRT")
 ```
 
 # Treatment Effect
+## Models discussion
+```{r}
+d_pivot <- fread('daily_totals_pivot.csv')
+head(d_pivot)
+```
 
-# Statistical Power
+
+```{r}
+#First model
+summary(lm(Meat_Comsumption~Week2+Treatment+Week2*Treatment+ID,d_pivot))
+```
+
+
+```{r}
+0.04899-0.81227
+```
+Not significant
+
+```{r}
+#Adding Is treatment day - significant, but SE not better
+summary(lm(Meat_Comsumption~Week2+Treatment+Week2*Treatment+ID+Is_TreatmentDay,d_pivot))
+```
+
+```{r}
+#Add pre post comsuption - No significanr, SE not better
+summary(lm(Meat_Comsumption~Week2+Treatment+Week2*Treatment+ID+Is_TreatmentDay+Pre_Day_Consumption+Post_Day_Consumption,d_pivot))
+```
+
+```{r}
+#good covariates - Some significance, better SE
+summary(lm(Meat_Comsumption~Week2+Treatment+Week2*Treatment+Is_TreatmentDay+Interest_Level + Reasons + Household_Vegetarian + People_in_Household + Sex + Age + Income + Education,d_pivot))
+```
+**least SE of Treatment and Week2:Treatment**
+
+
+```{r}
+#Add if before or after treatment day - No significanr, SE not better
+summary(lm(Meat_Comsumption~Week2+Treatment+Week2*Treatment+ID+Is_TreatmentDay+One_Day_Before_TD+Two_Day_Before_TD+Three_Day_Before_TD+One_Day_After_TD+Two_Day_After_TD+Three_Day_After_TD,d_pivot))
+```
+**days before people eat more, and days after people eat less.**
+**ID6C NA, no comparison data?**
+**0.07-0.44m negative effect but not stats significant**
+
+```{r}
+#all covariates, in mass
+#summary(lm(Meat_Comsumption~Week2+Treatment+Week2*Treatment+ID+Is_TreatmentDay+One_Day_Before_TD+Two_Day_Before_TD+Three_Day_Before_TD+One_Day_After_TD+Two_Day_After_TD+Three_Day_After_TD+Interest_Level + Reasons + Household_Vegetarian + People_in_Household + Sex + Age + Income + Education,d_pivot))
+```
+
+
+```{r}
+#Outcome Weekly_Meat_Com - significant
+summary(lm(Weekly_Meat_Com~Week2+Treatment+Week2*Treatment+ID+Is_TreatmentDay,d_pivot))
+```
+**Significant with "Treatment", but not "Week2:Treatment"**
+
+```{r}
+#Outcome Pre_Day_Consumption - Not randomly assigned, but positive cor
+summary(lm(Pre_Day_Consumption~Week2+Treatment+Week2*Treatment+ID+Is_TreatmentDay,d_pivot))
+```
+**Not randomly assigned treatment day, no casual inference. Positive correlation with "Is_TreatmentDay", not significance.**
+
+
+```{r}
+#Outcome Post_Day_Consumption - Not randomly assigned, but positive cor
+d_pivot_post = d_pivot[!(d_pivot$Treatment_Day==14),]
+summary(lm(Post_Day_Consumption~Week2+Treatment+Week2*Treatment+ID+Is_TreatmentDay,d_pivot_post))
+```
+
+**Not randomly assigned treatment day, no casual inference. Positive correlation with "Is_TreatmentDay", not significance.**
+
+# Statistical Power (need to redu the d, by std of treatment and interactive term treatment*week2)
 By having statistical significance in the estimated treatment effect, the experiment data has high statistical power. Figure below shows that had we rejected the null hypothesis, we would have a 99.98% powered test. This result is mainly due to the large treatment effect (d). 
 ```{r}
-pwr.t2n.test(n1 = 16, n2 = 13, d = -1.883899)
+pwr.t2n.test(n1 = 16, n2 = 13, d = -0.28)
 ```
 The result above shows that the power calculation based on 16 subjects assigned to treatment group and 13 subjects assigned to control group, and a Cohen’s d effect size determined from the experimental results of the number of questions correctly answered by each subject. Cohen’s d is the difference in means between the treatment and control group outcomes, divided by the pooled standard deviation. 
 
 In order to have a 90% power test, only around 14 subjects would be needed. The results below shows the number of subjects required per treatment and control group for an 90% powered test and Cohen’s d effect size matching the experimental results.
 
 ```{r}
-pwr.t.test(d = 1.883899, power = 0.9, 
+pwr.t.test(d = 0.28, power = 0.9, 
           , alternative = "two.sided")
 ```
 
-With our hypothesis that a week, that is treated by meatless on eday of week, would be different from the control week by reducing the average weekly consumption by 1/7th. Hence, this power calculation is looking at if we expect to be able to detect a treatment effect of that level, how many number of subjects does the experiment need. As a result, the experiment need 21 subjects t detect the desired treatment effect. 
+**???????????? doesn't make sensem, since we cannot get that big treatment effect.**
+With our hypothesis that a week, that is treated by meatless on eday of week, would be different from the control week by reducing the average weekly consumption by 1/7th. Hence, this power calculation is looking at if we expect to be able to detect a treatment effect of that level, in order to get at least a decent 80% power, how many number of subjects does the experiment need. As a result, the experiment need 21 subjects t detect the desired treatment effect. 
 ```{r}
 d$Pre = (d$Day1+ d$Day2+ d$Day3+ d$Day4+ d$Day5+ d$Day6+ d$Day7)/7
 d$Post = (d$Day8+ d$Day9+ d$Day10+ d$Day11+ d$Day12+ d$Day13+ d$Day14)/7
@@ -340,7 +410,7 @@ d_p = d_e/d_e_se
 pwr.t.test(d = d_p, power = 0.8, 
           , alternative = "two.sided")
 ```
-The graph above shows that, inn order to get at least a decent 80% power, and the desired treatment effect, the experiment need to have at least 21 subjects. 
+The graph above shows that, if we already have the desired treatment effect, in order to get at least a decent 80% power, the experiment need to have at least 21 subjects. 
 
 
 # Conclusions
